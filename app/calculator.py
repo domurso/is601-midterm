@@ -4,9 +4,10 @@ find other calcuator addition in the same directory
 """
 import sys
 from app.calculation import Calculation, CalculationFactory
+#from app.logger import get_logger
 
-
-precedence = {"1":['+','-'], "2":['*','/','%'], "3":['^', '?']}
+#log = get_logger("calculator")
+precedence = {"1":['+','-','--'], "2":['*','/','%','/%','//'], "3":['^', '?']}
 
 def get_precedence_group(operator):
     for group,ops in precedence.items():
@@ -20,6 +21,8 @@ def calculate_expression(input_str):
     try:
                 #print(input_str)
                 u_input_lst = input_str.split()
+                #log.debug(f"User entered input {input_string}")
+                
                 #print(u_input_lst)
                 if len(u_input_lst) < 3 or len(u_input_lst) % 2 == 0:
                     print("Invalid Format: Expected following example '1 + 1 + 2'")

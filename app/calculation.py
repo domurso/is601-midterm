@@ -135,3 +135,34 @@ class RootCalculation(Calculation):
 
     def execute(self) -> float:
         return Operation.root(self.a,self.b)
+
+
+
+@CalculationFactory.register_calculation('//')
+class IntegerDivisionCalculation(Calculation):
+    '''
+        Class for Root of A given B, (adds subtraction to calculator) '?' for root
+    '''
+
+    def execute(self) -> float:
+        return Operation.intDivide(self.a,self.b)
+
+
+@CalculationFactory.register_calculation('--')
+class AbsoluteDiffCalculation(Calculation):
+    '''
+        Class for Root of A given B, (adds subtraction to calculator) '?' for root
+    '''
+
+    def execute(self) -> float:
+        return Operation.absSubtraction(self.a,self.b)
+
+
+@CalculationFactory.register_calculation('/%')
+class PercentageCalculation(Calculation):
+    '''
+        Class for Root of A given B, (adds subtraction to calculator) '?' for root
+    '''
+
+    def execute(self) -> float:
+        return Operation.percentage(self.a,self.b)

@@ -113,3 +113,47 @@ class Operation:
             print("Divide By Zero Error")
             raise ValueException("Divide By Zero Error")
         return a%b
+
+
+    
+    @staticmethod
+    def intDivide(a:float,b:float) -> float:
+        """
+        divides two values of type float removes remander
+        **Params**
+            - *a (float)*: First float value
+            - *b (float)*: Second float value
+        **Returns**
+            - *float*:  division of *a* and *b*
+        """
+        if(b == 0):
+            raise ValueException("Divide By Zero Error")
+        return a//b
+
+
+    @staticmethod
+    def percentage(a:float,b:float) -> float:
+        """
+        Percentage of two values of type float
+        **Params**
+            - *a (float)*: First float value
+            - *b (float)*: Second float value
+        **Returns**
+            - *float*:  division of *a* and *b*
+        """
+        if(b == 0):
+            raise ValueException("Divide By Zero Error")
+        return (a/b) * 100
+
+
+    @staticmethod
+    def absSubtraction(a:float,b:float) -> float:
+        """
+        Subracts two values of type float
+        **Params**
+            - *a (float)*: First float value
+            - *b (float)*: Second float value
+        **Returns**
+            - *float*: absolute difference of *a* and *b*
+        """
+        return abs(a-b)
