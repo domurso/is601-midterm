@@ -1,143 +1,168 @@
-"""
-This is calculator.py it will contain the neccessities for the calculator to run
-find other calcuator addition in the same directory
-"""
 import sys
-from app.calculation import Calculation, CalculationFactory
+from app.calculation import CalculationFactory
 from app.logger import get_logger
+from app.memento import CalculationMemento, CalculationHistory
+import os
 
 log = get_logger("calculator")
-precedence = {"1":['+','-','--'], "2":['*','/','%','/%','//'], "3":['^', '?']}
+precedence = {"1": ['+', '-', '--'], "2": ['*', '/', '%', '/%', '//'], "3": ['^', '?']}
+
+# Initialize calculation history
+history_file = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'logs', 'calculation_history.json')
+history = CalculationHistory(history_file)
 
 def get_precedence_group(operator):
-    for group,ops in precedence.items():
+    """Return the precedence group for a given operator."""
+    for group, ops in precedence.items():
         if operator in ops:
             return group
     return None
 
-
 def calculate_expression(input_str):
-    #print(input_str)
+    """Process a calculation input and perform operations using CalculationFactory."""
     try:
-                #print(input_str)
-                u_input_lst = input_str.split()
-                log.debug(f"User entered input {input_str}")    
-                #print(u_input_lst)
-                if len(u_input_lst) < 3 or len(u_input_lst) % 2 == 0:
-                    print("Invalid Format: Expected following example '1 + 1 + 2'")
-                    raise ValueError("Invalid format")
-                values = u_input_lst.copy()
-                #print("step2")
-                try:
-                    result = float(values.pop(0))
-                    #print(f"result= {result}")
-                except ValueError:
-                    raise ValueError(f"Invalid Format - First Value must be a number, input {input_str}")
-                #print("step3",values)
-                precedence_group = None
-                while values:
-                    #print("step4")
-                    if len(values) < 2:
-                        raise ValueError("Incomplete expression: Expected operator and number")
-
-                    operator = values.pop(0)
-                    current_group = get_precedence_group(operator)
-                    #print(f"op={operator}")
-                    if current_group is None:
-                        raise ValueError(f"Unsupported operator {operator} only {precedence} allowed")
-                    
-                    if precedence_group is None:
-                        precedence_group = current_group
-                    elif current_group != precedence_group:
-                        raise ValueError(f"Mixed operator precedence not allowed: cannot use {operator} (group {current_group}) with group {precedence_group} operators, {precedence}")
-
-                    try:
-                        num = float(values.pop(0))
-                    except ValueError:
-                        print("Expected a number after operator")
-                        log.warn("Expected a number after operator")
-
-                    try:
-                        #print(operator,result,num)
-                        calculation = CalculationFactory.create_calculation(operator,result,num)
-                        #print("xxxxx")
-                        #print(calculation)
-                        
-                    except ValueError as ve:
-                        print("Calculation Error")
-                        raise ValueError(ve, "Invalid argument passed")
-                        break
-
-                    try:
-                        result = calculation.execute()
-
-                    except Exception as e:
-                        print(e)
-                        print("invalid argument passed")
-                        break
-
-                return result
+        log.debug(f"User entered input: {input_str}")
+        u_input_lst = input_str.strip().split()
+        
+        if len(u_input_lst) < 3 or len(u_input_lst) % 2 == 0:
+            log.error("Invalid format: Expected 'number operator number [operator number]...'")
+            raise ValueError("Invalid format: Expected 'number operator number [operator number]...'")
+        
+        values = u_input_lst.copy()
+        try:
+            result = float(values.pop(0))
+            log.debug(f"Initial result: {result}")
+        except ValueError:
+            log.error(f"Invalid format: First value must be a number, input {input_str}")
+            raise ValueError("Invalid format: First value must be a number")
+        
+        precedence_group = None
+        steps = []  # Collect mementos for each operation step
+        while values:
+            if len(values) < 2:
+                log.error("Incomplete expression: Expected operator and number")
+                raise ValueError("Incomplete expression: Expected operator and number")
+            
+            operator = values.pop(0)
+            current_group = get_precedence_group(operator)
+            if current_group is None:
+                log.warn(f"Unsupported operator detected: {operator}")
+                raise ValueError(f"Unsupported operator {operator}. Only {', '.join(sum(precedence.values(), []))} allowed")
+            
+            if precedence_group is None:
+                precedence_group = current_group
+                log.debug(f"Set precedence group to {precedence_group}")
+            elif current_group != precedence_group:
+                log.warn(f"Mixed operator precedence detected: {operator} (group {current_group}) with group {precedence_group}")
+                raise ValueError(f"Mixed operator precedence not allowed: Cannot use {operator} (group {current_group}) with group {precedence_group} operators")
+            
+            try:
+                num = float(values.pop(0))
+                log.debug(f"Processing {operator} {num}")
+            except ValueError:
+                log.error("Expected a number after operator")
+                raise ValueError("Expected a number after operator")
+            
+            try:
+                calculation = CalculationFactory.create_calculation(operator, result, num)
+                new_result = calculation.execute()
+                log.debug(f"Current result: {new_result}")
+                # Save operation step as a memento
+                memento = CalculationMemento(f"{result} {operator} {num}", operator, result, num, new_result)
+                steps.append(memento)
+                result = new_result
+            except ValueError as ve:
+                log.error(f"Calculation error: {str(ve)}")
+                raise ValueError(f"Calculation error: {str(ve)}")
+        
+        # Save the entire expression group
+        history.save_calculation_group(input_str, result, steps)
+        log.info(f"Final calculation result: {result}")
+        return result
+    
     except ValueError as e:
-            log.warn(e)
-            print("invalid input: {str(e)}")
-            return e
+        log.warn(f"Invalid input: {str(e)}")
+        print(f"Invalid input: {str(e)}")
+        print("Please use format: number operator number [operator number]...")
+        print(f"Supported operators: {', '.join(sum(precedence.values(), []))}")
+        print("Precedence groups: +,-,-- (group 1); *,/,%/%,// (group 2); ^,? (group 3)")
+        print("Examples: '1 + 2 - 3', '2 * 3 / 4', '16 ^ 2', '25 ? 2' (square root)")
+        return None
 
+def display_history():
+    """Display the history of calculation groups."""
+    calculations = history.get_history()
+    if not calculations:
+        print("No calculations in history.")
+        log.info("Displayed empty calculation history")
+        return
+    print("\nCalculation History:")
+    for i, group in enumerate(calculations, 1):
+        print(f"{i}. {group['timestamp']}: {group['input']} = {group['result']}")
+        for j, step in enumerate(group['steps'], 1):
+            print(f"   Step {j}: {step['input']} = {step['result']}")
+    log.info(f"Displayed calculation history with {len(calculations)} groups")
 
-def calculator() -> None: # Calculator
-    print("Welcome to my Calculator, as of right now it doesnt do anything, type 'exit' to exit :) ")
+def calculator():
+    """Main calculator function."""
+    print("Welcome to Dom Urso's Calculator!")
+    print("Enter calculations like '1 + 2 + 3', 'history' to view past calculations, or 'exit' to quit.")
     while True:
         try:
-            u_input: str = input(">> ").strip().lower()
-            if not u_input: #if the user enters nothing then ask again
-                print("Please 'exit' to exit")
+            u_input = input(">> ").strip().lower()
+            if not u_input:
+                print("Please enter a calculation, 'history', or 'exit'")
                 continue
             
-            # User Commands
-            if u_input == 'exit': # to exit the program
+            if u_input == 'exit':
+                log.info("Exiting calculator")
                 print("Exiting the Calculator")
                 sys.exit(0)
-
-            elif u_input == 'help': # Help Command
+            
+            if u_input == 'help':
                 print(f'''
-                      Welcome To Dom Urso's Calculator
-                      The Current Available Function Is Just a Calculator
-                      Current Available Operations
-                      "+" plus
-                      "-" minus
-                      "/" divide
-                      "*" multiply
-                      "%" modulo
-                      "^" power
-                      "?" root
-
-                      Available Commands
-                      help - to get help
-                      exit - to exit the program
-                      precedence - to view operation precedence groupings
-
-
-                      Examples
-                      Enter -> 1 + 1
-                      Operations can be combined if they have the same precedence
-                      ex + and - or *, /, and %
-                      ''')
+                    Welcome To Dom Urso's Calculator
+                    Enter calculations in the format: number operator number [operator number]...
+                    Supported Operators:
+                      + (addition), - (subtraction), -- (absolute difference)
+                      * (multiplication), / (division), % (modulo), /% (percentage), // (integer division)
+                      ^ (power), ? (root)
+                    Precedence Groups:
+                      Group 1: +, -, --
+                      Group 2: *, /, %, /%, //
+                      Group 3: ^, ?
+                    Commands:
+                      help - display this help message
+                      precedence - view operator precedence groupings
+                      history - view past calculations with steps
+                      exit - exit the program
+                    Examples:
+                      1 + 2 - 3
+                      2 * 3 / 4
+                      16 ^ 2
+                      25 ? 2 (square root)
+                ''')
                 continue
-            elif u_input == 'precedence':
-                print(f'Precidence is how operations are handled in math, people most commonly use pemdas but there are other operations aswell, these are the following grouping for precidence in my program\n {precedence}')
+            
+            if u_input == 'precedence':
+                print(f"Precedence groups define the order of operations:\n{precedence}")
+                continue
+            
+            if u_input == 'history':
+                display_history()
                 continue
             
             try:
-                float(u_input[0])
+                float(u_input.split()[0])
             except:
-                raise ValueError("Invalid Command Entered")
-            try:
-                #print(u_input)
-                result = calculate_expression(u_input)
+                raise ValueError("Invalid command: Input must start with a number")
+            
+            result = calculate_expression(u_input)
+            if result is not None:
                 print(f"Result: {result}")
-            except:
-                raise ValueError("Issue Handling Expression, Please try again")
         
-
         except Exception as e:
-            print("\n\n",e)
+            log.warn(f"Error: {str(e)}")
+            print(f"Error: {str(e)}")
+            print("Please try again or type 'help' for assistance")
             continue
