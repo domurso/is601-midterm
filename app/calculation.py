@@ -88,3 +88,50 @@ class SubtractCalculation(Calculation):
         return Operation.subtraction(self.a,self.b)
 
         
+@CalculationFactory.register_calculation('/')
+class DivisionCalculation(Calculation):
+    '''
+        Class for dividing two numbers, (adds subtraction to calculator) '/' for division
+    '''
+
+    def execute(self) -> float:
+        return Operation.divide(self.a,self.b)
+
+
+@CalculationFactory.register_calculation('*')
+class MultiplyCalculation(Calculation):
+    '''
+        Class for multiplying two numbers, (adds subtraction to calculator) '*' for multiplcation
+    '''
+
+    def execute(self) -> float:
+        return Operation.multiply(self.a,self.b)
+
+@CalculationFactory.register_calculation('%')
+class ModuloCalculation(Calculation):
+    '''
+        Class for Modulo two numbers, (adds subtraction to calculator) '%' for modulous
+    '''
+
+    def execute(self) -> float:
+        return Operation.modulo(self.a,self.b)
+
+
+@CalculationFactory.register_calculation('^')
+class PowCalculation(Calculation):
+    '''
+        Class for power of a to b, (adds subtraction to calculator) '^' for pow
+    '''
+
+    def execute(self) -> float:
+        return Operation.pow(self.a,self.b)
+
+
+@CalculationFactory.register_calculation('?')
+class RootCalculation(Calculation):
+    '''
+        Class for Root of A given B, (adds subtraction to calculator) '?' for root
+    '''
+
+    def execute(self) -> float:
+        return Operation.root(self.a,self.b)

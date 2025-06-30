@@ -4,6 +4,17 @@ find other calcuator addition in the same directory
 """
 import sys
 from app.calculation import Calculation, CalculationFactory
+
+
+precedence = {"1":['+','-'], "2":['*','/','%'], "3":['^', '?']}
+
+def get_precedence_group(operator):
+    for group,ops in precedence.items():
+        if operator in ops:
+            return group
+    return None
+
+
 def calculate_expression(input_str):
     #print(input_str)
     try:
@@ -22,15 +33,22 @@ def calculate_expression(input_str):
                     print("First Value must be a number")
                     raise ValueError("Invalid Format")
                 #print("step3",values)
+                precedence_group = None
                 while values:
                     #print("step4")
                     if len(values) < 2:
                         print("Incomplete expression: Expected operator and number")
 
                     operator = values.pop(0)
+                    current_group = get_precedence_group(operator)
                     #print(f"op={operator}")
-                    if operator not in ['+','-']:
-                        print(f"Unsupported operator {operator} only ____ allowed")
+                    if current_group is None:
+                        print(f"Unsupported operator {operator} only {precedence} allowed")
+                    
+                    if precedence_group is None:
+                        precedence_group = current_group
+                    elif current_group != precedence_group:
+                        raise ValueError(f"Mixed operator precedence not allowed: cannot use {operator} (group {current_group}) with group {precedence_group} operators, {precedence}")
 
                     try:
                         num = float(values.pop(0))
@@ -59,7 +77,7 @@ def calculate_expression(input_str):
                 return result
     except ValueError as e:
             print("invalid input: {str(e)}")
-            return None
+            return e
 
 
 def calculator() -> None: # Calculator
