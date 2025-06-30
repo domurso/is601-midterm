@@ -6,6 +6,9 @@ from app.memento import CalculationMemento, CalculationHistory
 from app.history import display_history, save_history, new_history, delete_calculation, load_history
 from app.exceptions import OperationError, CalculatorError, HistoryError
 from app.config import HISTORY_FILE_PATH
+from colorama import init, Fore, Style
+
+init()  # Initialize colorama
 
 log = get_logger("calculator")
 precedence = {"1": ['+', '-', '--'], "2": ['*', '/', '%', '/%', '//'], "3": ['^', '?']}
@@ -129,56 +132,56 @@ def calculator(history=None):
     """Main calculator function."""
     if history is None:
         history = CalculationHistory(HISTORY_FILE_PATH)
-    print("Welcome to Dom Urso's Calculator!")
-    print("Enter calculations like '1 + 2 + 3' or 'ans(1) + 2', 'history' to view past calculations, or 'exit' to quit.")
+    print(f"{Fore.BLUE}Welcome to Dom Urso's Calculator!{Style.RESET_ALL}")
+    print(f"Enter calculations like '1 + 2 + 3' or 'ans(1) + 2', 'history' to view past calculations, or 'exit' to quit.")
     while True:
         try:
-            u_input = input(">> ").strip().lower()
+            u_input = input(f"{Fore.BLUE}>> {Style.RESET_ALL}").strip().lower()
             if not u_input:
-                print("Please enter a calculation, 'history', 'save', 'new', 'delete <index>', 'load <filename>', or 'exit'")
+                print(f"{Fore.RED}Please enter a calculation, 'history', 'save', 'new', 'delete <index>', 'load <filename>', or 'exit'{Style.RESET_ALL}")
                 continue
             
             if u_input == 'exit':
                 log.info("Exiting calculator")
-                print("Exiting the Calculator")
+                print(f"{Fore.BLUE}Exiting the Calculator{Style.RESET_ALL}")
                 sys.exit(0)
             
             if u_input == 'help':
-                print(f'''
-                    Welcome To Dom Urso's Calculator
-                    Enter calculations in the format: number operator number [operator number]...
-                    Numbers can be numeric values or 'ans(n)' (e.g., 'ans(1)' for the first calculation, 'ans(2)' for the second, etc.)
+                print(f"{Fore.YELLOW}Welcome To Dom Urso's Calculator{Style.RESET_ALL}")
+                print(f"""
+                    Enter calculations in the format: {Fore.GREEN}number operator number [operator number]...{Style.RESET_ALL}
+                    Numbers can be numeric values or {Fore.GREEN}'ans(n)'{Style.RESET_ALL} (e.g., 'ans(1)' for the first calculation, 'ans(2)' for the second, etc.)
                     'ans' alone refers to the most recent calculation.
-                    In history, ans(n) will show its resolved value in parentheses, e.g., 'ans(1) (6.0) * 2'
-                    Supported Operators:
-                      + (addition), - (subtraction), -- (absolute difference)
-                      * (multiplication), / (division), % (modulo), /% (percentage), // (integer division)
-                      ^ (power), ? (root)
-                    Precedence Groups:
+                    In history, ans(n) will show its resolved value in parentheses, e.g., {Fore.GREEN}'ans(1) (6.0) * 2'{Style.RESET_ALL}
+                    {Fore.YELLOW}Supported Operators:{Style.RESET_ALL}
+                      {Fore.GREEN}+ (addition), - (subtraction), -- (absolute difference){Style.RESET_ALL}
+                      {Fore.GREEN}* (multiplication), / (division), % (modulo), /% (percentage), // (integer division){Style.RESET_ALL}
+                      {Fore.GREEN}^ (power), ? (root){Style.RESET_ALL}
+                    {Fore.YELLOW}Precedence Groups:{Style.RESET_ALL}
                       Group 1: +, -, --
                       Group 2: *, /, %, /%, //
                       Group 3: ^, ?
-                    Commands:
-                      help - display this help message
-                      precedence - view operator precedence groupings
-                      history - view past calculations with steps
-                      save - save current history to a timestamped CSV file
-                      new - start a new history (clears current history)
-                      delete <index> - delete the calculation at the given index (e.g., 'delete 1')
-                      load <filename> - load history from a backup CSV file (e.g., 'load history_20250630_182058.csv')
-                      exit - exit the program
-                    Examples:
-                      1 + 2 - 3
-                      ans(1) * 2
-                      ans + 5
-                      25 ? 2 (square root)
-                      delete 1
-                      load history_20250630_182058.csv
-                ''')
+                    {Fore.YELLOW}Commands:{Style.RESET_ALL}
+                      {Fore.GREEN}help{Style.RESET_ALL} - display this help message
+                      {Fore.GREEN}precedence{Style.RESET_ALL} - view operator precedence groupings
+                      {Fore.GREEN}history{Style.RESET_ALL} - view past calculations with steps
+                      {Fore.GREEN}save{Style.RESET_ALL} - save current history to a timestamped CSV file
+                      {Fore.GREEN}new{Style.RESET_ALL} - start a new history (clears current history)
+                      {Fore.GREEN}delete <index>{Style.RESET_ALL} - delete the calculation at the given index (e.g., 'delete 1')
+                      {Fore.GREEN}load <filename>{Style.RESET_ALL} - load history from a backup CSV file (e.g., 'load history_20250630_182058.csv')
+                      {Fore.GREEN}exit{Style.RESET_ALL} - exit the program
+                    {Fore.YELLOW}Examples:{Style.RESET_ALL}
+                      {Fore.GREEN}1 + 2 - 3{Style.RESET_ALL}
+                      {Fore.GREEN}ans(1) * 2{Style.RESET_ALL}
+                      {Fore.GREEN}ans + 5{Style.RESET_ALL}
+                      {Fore.GREEN}25 ? 2{Style.RESET_ALL} (square root)
+                      {Fore.GREEN}delete 1{Style.RESET_ALL}
+                      {Fore.GREEN}load history_20250630_182058.csv{Style.RESET_ALL}
+                """)
                 continue
             
             if u_input == 'precedence':
-                print(f"Precedence groups define the order of operations:\n{precedence}")
+                print(f"{Fore.YELLOW}Precedence groups define the order of operations:{Style.RESET_ALL}\n{precedence}")
                 continue
             
             if u_input == 'history':
@@ -199,11 +202,11 @@ def calculator(history=None):
                     index = int(index_str)
                     delete_calculation(history, index)
                 except ValueError as e:
-                    print(f"Error: Invalid index format: {str(e)}")
-                    print("Please use format: delete <index> (e.g., 'delete 1')")
+                    print(f"{Fore.RED}Error: Invalid index format: {str(e)}{Style.RESET_ALL}")
+                    print(f"{Fore.RED}Please use format: delete <index> (e.g., 'delete 1'){Style.RESET_ALL}")
                 except HistoryError as e:
-                    print(f"Error: {str(e)}")
-                    print("Please use format: delete <index> (e.g., 'delete 1')")
+                    print(f"{Fore.RED}Error: {str(e)}{Style.RESET_ALL}")
+                    print(f"{Fore.RED}Please use format: delete <index> (e.g., 'delete 1'){Style.RESET_ALL}")
                 continue
             
             if u_input.startswith('load '):
@@ -211,10 +214,9 @@ def calculator(history=None):
                     filename = u_input.split(' ', 1)[1].strip()
                     load_history(history, filename)
                 except HistoryError as e:
-                    print(f"Error: {str(e)}")
-                    print("Please use format: load <filename> (e.g., 'load history_20250630_182058.csv')")
-                continue
-            
+                    print(f"{Fore.RED}Error: {str(e)}{Style.RESET_ALL}")
+                    print(f"{Fore.RED}Please use format: load <filename> (e.g., 'load history_20250630_182058.csv'){Style.RESET_ALL}")
+                continue        
             try:
                 first_token = u_input.split()[0]
                 if not (first_token.startswith('ans') or float(first_token)):
