@@ -44,8 +44,21 @@ class CalculationHistory:
         try:
             if os.path.exists(self.history_file):
                 self.history = pd.read_csv(self.history_file)
-                # Convert steps from JSON strings to lists of dicts
-                self.history['steps'] = self.history['steps'].apply(json.loads)
+                # Ensure 'steps' column exists
+                if 'steps' not in self.history.columns:
+                    self.history['steps'] = pd.Series([[]] * len(self.history), index=self.history.index)
+                    logger.warn(f"No 'steps' column in {self.history_file}; initialized with empty lists")
+                else:
+                    # Convert steps from JSON strings to lists of dicts
+                    def safe_json_loads(s):
+                        try:
+                            if pd.isna(s) or s == '':
+                                return []
+                            return json.loads(s)
+                        except json.JSONDecodeError as e:
+                            logger.warn(f"Invalid JSON in steps column: {s}, error: {str(e)}")
+                            return []
+                    self.history['steps'] = self.history['steps'].apply(safe_json_loads)
                 logger.debug(f"Loaded history from {self.history_file}: {len(self.history)} entries")
             else:
                 self.history = pd.DataFrame(columns=['input', 'result', 'timestamp', 'steps'])
@@ -61,7 +74,7 @@ class CalculationHistory:
                 'input': input_str,
                 'result': result,
                 'timestamp': datetime.now().isoformat(),
-                'steps': [step.get_state() for step in steps]
+                'steps': json.dumps([step.get_state() for step in steps])  # Explicitly serialize to JSON
             }
             # Append to DataFrame
             self.history = pd.concat([self.history, pd.DataFrame([group])], ignore_index=True)
@@ -152,7 +165,7 @@ class CalculationHistory:
                 logger.warn(f"Backup file {backup_file} does not exist")
                 raise HistoryError(f"Backup file {filename} does not exist")
             self.history = pd.read_csv(backup_file)
-            self.history['steps'] = self.history['steps'].apply(json.loads)
+            self.history['steps'] = self.history['steps'].apply(lambda s: json.loads(s) if pd.notna(s) else [])
             self.history.to_csv(self.history_file, index=False)
             logger.info(f"Loaded history from {backup_file} into {self.history_file}: {len(self.history)} entries")
         except Exception as e:

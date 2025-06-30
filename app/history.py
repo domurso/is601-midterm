@@ -1,6 +1,6 @@
-from memento import CalculationHistory
-from logger import get_logger
-from exceptions import HistoryError
+from app.memento import CalculationHistory
+from app.logger import get_logger
+from app.exceptions import HistoryError
 import os
 
 logger = get_logger("history")

@@ -1,10 +1,10 @@
 import sys
 import re
-from calculation import CalculationFactory
-from logger import get_logger
-from memento import CalculationMemento, CalculationHistory
-from history import display_history, save_history, new_history, delete_calculation, load_history
-from exceptions import OperationError, CalculatorError, HistoryError
+from app.calculation import CalculationFactory
+from app.logger import get_logger
+from app.memento import CalculationMemento, CalculationHistory
+from app.history import display_history, save_history, new_history, delete_calculation, load_history
+from app.exceptions import OperationError, CalculatorError, HistoryError
 import os
 
 log = get_logger("calculator")
