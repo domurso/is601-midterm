@@ -1,6 +1,7 @@
-# this file runs the entire program, in a terminal you can do python3 main.py to run the calculator
-
 from app.calculator import calculator
+from app.memento import CalculationHistory
+from app.config import HISTORY_FILE_PATH
 
-if __name__ == "__main__": #runs our basic program
-    calculator()
+if __name__ == "__main__":
+    history = CalculationHistory(HISTORY_FILE_PATH)
+    calculator(history)
