@@ -93,14 +93,48 @@ def calculator() -> None: # Calculator
             if u_input == 'exit': # to exit the program
                 print("Exiting the Calculator")
                 sys.exit(0)
+
+            elif u_input == 'help': # Help Command
+                print(f'''
+                      Welcome To Dom Urso's Calculator
+                      The Current Available Function Is Just a Calculator
+                      Current Available Operations
+                      "+" plus
+                      "-" minus
+                      "/" divide
+                      "*" multiply
+                      "%" modulo
+                      "^" power
+                      "?" root
+
+                      Available Commands
+                      help - to get help
+                      exit - to exit the program
+                      precedence - to view operation precedence groupings
+
+
+                      Examples
+                      Enter -> 1 + 1
+                      Operations can be combined if they have the same precedence
+                      ex + and - or *, /, and %
+                      ''')
+                continue
+            elif u_input == 'precedence':
+                print(f'Precidence is how operations are handled in math, people most commonly use pemdas but there are other operations aswell, these are the following grouping for precidence in my program\n {precedence}')
+                continue
             
+            try:
+                float(u_input[0])
+            except:
+                raise ValueError("Invalid Command Entered")
             try:
                 #print(u_input)
                 result = calculate_expression(u_input)
                 print(f"Result: {result}")
             except:
-                print("Issue Handling Expression, Please try again")
+                raise ValueError("Issue Handling Expression, Please try again")
         
 
         except Exception as e:
             print("\n\n",e)
+            continue
