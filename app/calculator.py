@@ -4,9 +4,9 @@ find other calcuator addition in the same directory
 """
 import sys
 from app.calculation import Calculation, CalculationFactory
-#from app.logger import get_logger
+from app.logger import get_logger
 
-#log = get_logger("calculator")
+log = get_logger("calculator")
 precedence = {"1":['+','-','--'], "2":['*','/','%','/%','//'], "3":['^', '?']}
 
 def get_precedence_group(operator):
@@ -21,8 +21,7 @@ def calculate_expression(input_str):
     try:
                 #print(input_str)
                 u_input_lst = input_str.split()
-                #log.debug(f"User entered input {input_string}")
-                
+                log.debug(f"User entered input {input_str}")    
                 #print(u_input_lst)
                 if len(u_input_lst) < 3 or len(u_input_lst) % 2 == 0:
                     print("Invalid Format: Expected following example '1 + 1 + 2'")
@@ -33,20 +32,19 @@ def calculate_expression(input_str):
                     result = float(values.pop(0))
                     #print(f"result= {result}")
                 except ValueError:
-                    print("First Value must be a number")
-                    raise ValueError("Invalid Format")
+                    raise ValueError(f"Invalid Format - First Value must be a number, input {input_str}")
                 #print("step3",values)
                 precedence_group = None
                 while values:
                     #print("step4")
                     if len(values) < 2:
-                        print("Incomplete expression: Expected operator and number")
+                        raise ValueError("Incomplete expression: Expected operator and number")
 
                     operator = values.pop(0)
                     current_group = get_precedence_group(operator)
                     #print(f"op={operator}")
                     if current_group is None:
-                        print(f"Unsupported operator {operator} only {precedence} allowed")
+                        raise ValueError(f"Unsupported operator {operator} only {precedence} allowed")
                     
                     if precedence_group is None:
                         precedence_group = current_group
@@ -57,6 +55,7 @@ def calculate_expression(input_str):
                         num = float(values.pop(0))
                     except ValueError:
                         print("Expected a number after operator")
+                        log.warn("Expected a number after operator")
 
                     try:
                         #print(operator,result,num)
@@ -79,6 +78,7 @@ def calculate_expression(input_str):
 
                 return result
     except ValueError as e:
+            log.warn(e)
             print("invalid input: {str(e)}")
             return e
 
