@@ -69,3 +69,22 @@ class CalculationHistory:
     def get_history(self):
         """Return the list of calculation groups."""
         return self.history
+    
+    def get_previous_result(self, n):
+        """Return the result of the n-th previous calculation group (n=0 for most recent)."""
+        try:
+            if not self.history:
+                logger.warn("No previous calculations available")
+                raise ValueError("No previous calculations available")
+            if n < 0:
+                logger.warn(f"Invalid history index: {n}")
+                raise ValueError("History index cannot be negative")
+            if n >= len(self.history):
+                logger.warn(f"History index {n} out of range; only {len(self.history)} calculations available")
+                raise ValueError(f"History index {n} out of range")
+            result = self.history[-(n + 1)]['result']
+            logger.debug(f"Retrieved previous result (ans-{n}): {result}")
+            return result
+        except Exception as e:
+            logger.error(f"Failed to retrieve previous result (ans-{n}): {str(e)}")
+            raise

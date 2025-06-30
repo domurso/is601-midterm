@@ -1,4 +1,5 @@
 import sys
+import re
 from app.calculation import CalculationFactory
 from app.logger import get_logger
 from app.memento import CalculationMemento, CalculationHistory
@@ -18,6 +19,16 @@ def get_precedence_group(operator):
             return group
     return None
 
+def parse_ans_reference(token):
+    """Parse 'ans' or 'ans-n' and return the corresponding previous result."""
+    if token == 'ans':
+        return history.get_previous_result(0)
+    match = re.match(r'ans-(\d+)', token)
+    if match:
+        n = int(match.group(1))
+        return history.get_previous_result(n)
+    raise ValueError(f"Invalid ans reference: {token}")
+
 def calculate_expression(input_str):
     """Process a calculation input and perform operations using CalculationFactory."""
     try:
@@ -30,14 +41,19 @@ def calculate_expression(input_str):
         
         values = u_input_lst.copy()
         try:
-            result = float(values.pop(0))
+            first_token = values.pop(0)
+            if first_token.startswith('ans'):
+                result = parse_ans_reference(first_token)
+            else:
+                result = float(first_token)
             log.debug(f"Initial result: {result}")
-        except ValueError:
-            log.error(f"Invalid format: First value must be a number, input {input_str}")
-            raise ValueError("Invalid format: First value must be a number")
+        except ValueError as e:
+            log.error(f"Invalid format: First value must be a number or ans-n, input {input_str}")
+            raise ValueError(f"Invalid format: First value must be a number or ans-n: {str(e)}")
         
         precedence_group = None
         steps = []  # Collect mementos for each operation step
+        original_input = [first_token] + values  # Preserve original input for history
         while values:
             if len(values) < 2:
                 log.error("Incomplete expression: Expected operator and number")
@@ -57,18 +73,24 @@ def calculate_expression(input_str):
                 raise ValueError(f"Mixed operator precedence not allowed: Cannot use {operator} (group {current_group}) with group {precedence_group} operators")
             
             try:
-                num = float(values.pop(0))
+                next_token = values.pop(0)
+                if next_token.startswith('ans'):
+                    num = parse_ans_reference(next_token)
+                else:
+                    num = float(next_token)
                 log.debug(f"Processing {operator} {num}")
-            except ValueError:
-                log.error("Expected a number after operator")
-                raise ValueError("Expected a number after operator")
+            except ValueError as e:
+                log.error(f"Expected a number or ans-n after operator: {str(e)}")
+                raise ValueError(f"Expected a number or ans-n after operator: {str(e)}")
             
             try:
                 calculation = CalculationFactory.create_calculation(operator, result, num)
                 new_result = calculation.execute()
                 log.debug(f"Current result: {new_result}")
-                # Save operation step as a memento
-                memento = CalculationMemento(f"{result} {operator} {num}", operator, result, num, new_result)
+                # Save operation step as a memento with original token
+                step_input = f"{original_input[0]} {operator} {next_token}"
+                original_input = [str(new_result)] + values  # Update for next step
+                memento = CalculationMemento(step_input, operator, result, num, new_result)
                 steps.append(memento)
                 result = new_result
             except ValueError as ve:
@@ -83,10 +105,10 @@ def calculate_expression(input_str):
     except ValueError as e:
         log.warn(f"Invalid input: {str(e)}")
         print(f"Invalid input: {str(e)}")
-        print("Please use format: number operator number [operator number]...")
+        print("Please use format: number operator number [operator number]..., where number can be a number or ans-n")
         print(f"Supported operators: {', '.join(sum(precedence.values(), []))}")
         print("Precedence groups: +,-,-- (group 1); *,/,%/%,// (group 2); ^,? (group 3)")
-        print("Examples: '1 + 2 - 3', '2 * 3 / 4', '16 ^ 2', '25 ? 2' (square root)")
+        print("Examples: '1 + 2 - 3', 'ans * 2', 'ans-1 + 5', '25 ? 2' (square root)")
         return None
 
 def display_history():
@@ -106,7 +128,7 @@ def display_history():
 def calculator():
     """Main calculator function."""
     print("Welcome to Dom Urso's Calculator!")
-    print("Enter calculations like '1 + 2 + 3', 'history' to view past calculations, or 'exit' to quit.")
+    print("Enter calculations like '1 + 2 + 3' or 'ans + 2', 'history' to view past calculations, or 'exit' to quit.")
     while True:
         try:
             u_input = input(">> ").strip().lower()
@@ -123,6 +145,7 @@ def calculator():
                 print(f'''
                     Welcome To Dom Urso's Calculator
                     Enter calculations in the format: number operator number [operator number]...
+                    Numbers can be numeric values or 'ans-n' (e.g., 'ans' or 'ans-0' for the last result, 'ans-1' for the one before, etc.)
                     Supported Operators:
                       + (addition), - (subtraction), -- (absolute difference)
                       * (multiplication), / (division), % (modulo), /% (percentage), // (integer division)
@@ -138,8 +161,8 @@ def calculator():
                       exit - exit the program
                     Examples:
                       1 + 2 - 3
-                      2 * 3 / 4
-                      16 ^ 2
+                      ans * 2
+                      ans-1 + 5
                       25 ? 2 (square root)
                 ''')
                 continue
@@ -153,9 +176,11 @@ def calculator():
                 continue
             
             try:
-                float(u_input.split()[0])
-            except:
-                raise ValueError("Invalid command: Input must start with a number")
+                first_token = u_input.split()[0]
+                if not (first_token.startswith('ans') or float(first_token)):
+                    raise ValueError("Invalid command: Input must start with a number or ans-n")
+            except ValueError as e:
+                raise ValueError(f"Invalid command: Input must start with a number or ans-n: {str(e)}")
             
             result = calculate_expression(u_input)
             if result is not None:
