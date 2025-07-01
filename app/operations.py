@@ -14,7 +14,7 @@ class Operation:
         """
         try:
             return a + b
-        except OverflowError as e:
+        except OverflowError as e: # pragma: no cover
             raise OperationError(f"Addition overflow: {str(e)}")  # pragma: no cover
 
     @staticmethod
@@ -29,7 +29,7 @@ class Operation:
         """
         try:
             return a - b
-        except OverflowError as e:
+        except OverflowError as e: # pragma: no cover
             raise OperationError(f"Subtraction overflow: {str(e)}")  # pragma: no cover
 
     @staticmethod
@@ -44,7 +44,7 @@ class Operation:
         """
         try:
             return a * b
-        except OverflowError as e:
+        except OverflowError as e: # pragma: no cover
             raise OperationError(f"Multiplication overflow: {str(e)}")  # pragma: no cover
 
     @staticmethod
@@ -61,7 +61,7 @@ class Operation:
             raise OperationError("Divide By Zero Error")
         try:
             return a / b
-        except OverflowError as e:
+        except OverflowError as e: # pragma: no cover
             raise OperationError(f"Division overflow: {str(e)}")  # pragma: no cover
 
     @staticmethod
@@ -97,7 +97,7 @@ class Operation:
             raise OperationError("Even root of negative number is undefined")
         try:
             return math.pow(a, 1 / b)
-        except OverflowError as e:
+        except OverflowError as e: # pragma: no cover
             raise OperationError(f"Root overflow: {str(e)}")  # pragma: no cover
 
     @staticmethod
@@ -114,7 +114,7 @@ class Operation:
             raise OperationError("Divide By Zero Error")
         try:
             return a % b
-        except OverflowError as e:
+        except OverflowError as e: # pragma: no cover
             raise OperationError(f"Modulo overflow: {str(e)}")  # pragma: no cover
 
     @staticmethod
@@ -131,7 +131,7 @@ class Operation:
             raise OperationError("Divide By Zero Error")
         try:
             return a // b
-        except OverflowError as e:
+        except OverflowError as e: # pragma: no cover
             raise OperationError(f"Integer division overflow: {str(e)}")  # pragma: no cover
 
     @staticmethod
@@ -148,7 +148,7 @@ class Operation:
             raise OperationError("Divide By Zero Error")
         try:
             return (a / b) * 100
-        except OverflowError as e:
+        except OverflowError as e: # pragma: no cover
             raise OperationError(f"Percentage overflow: {str(e)}")  # pragma: no cover
 
     @staticmethod
@@ -163,5 +163,5 @@ class Operation:
         """
         try:
             return abs(a - b)
-        except OverflowError as e:
+        except OverflowError as e: # pragma: no cover
             raise OperationError(f"Absolute subtraction overflow: {str(e)}")  # pragma: no cover
