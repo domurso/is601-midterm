@@ -5,6 +5,7 @@ from datetime import datetime
 from app.logger import get_logger
 from app.exceptions import HistoryError
 from app.config import HISTORY_DIR, HISTORY_BACKUP_DIR
+from app.observer import Subject
 
 logger = get_logger("memento")
 
@@ -21,8 +22,9 @@ class CalculationMemento:
     def get_state(self):
         return self._state
 
-class CalculationHistory:
+class CalculationHistory(Subject):
     def __init__(self, history_file):
+        super().__init__()
         self.history_file = history_file
         self.history = pd.DataFrame(columns=['input', 'result', 'timestamp', 'steps'])
         try:
@@ -66,7 +68,7 @@ class CalculationHistory:
         try:
             group = {
                 'input': input_str,
-                'result': float(result),  # Convert np.float64 to float
+                'result': float(result),
                 'timestamp': datetime.now().isoformat(),
                 'steps': json.dumps([step.get_state() for step in steps])
             }
@@ -74,6 +76,7 @@ class CalculationHistory:
             self.history = pd.concat([self.history, new_entry], ignore_index=True)
             self.history.to_csv(self.history_file, index=False)
             logger.info(f"Saved calculation group to {self.history_file}: {group}")
+            self.notify_observers("calculation_added", group)
         except Exception as e:
             logger.error(f"Failed to save calculation group to {self.history_file}: {str(e)}")
             raise HistoryError(f"Failed to save calculation group: {str(e)}")
@@ -111,6 +114,7 @@ class CalculationHistory:
             backup_file = os.path.join(HISTORY_BACKUP_DIR, f"history_{timestamp}.csv")
             self.history.to_csv(backup_file, index=False)
             logger.info(f"Saved history to {backup_file}")
+            self.notify_observers("history_saved", {"backup_file": backup_file})
             return backup_file
         except Exception as e:
             logger.error(f"Failed to save history to backup file: {str(e)}")
@@ -121,6 +125,7 @@ class CalculationHistory:
             self.history = pd.DataFrame(columns=['input', 'result', 'timestamp', 'steps'])
             self.history.to_csv(self.history_file, index=False)
             logger.info(f"Cleared history and started new history in {self.history_file}")
+            self.notify_observers("history_cleared", {})
         except Exception as e:
             logger.error(f"Failed to start new history in {self.history_file}: {str(e)}")
             raise HistoryError(f"Failed to start new history: {str(e)}")
@@ -139,6 +144,7 @@ class CalculationHistory:
             self.history = self.history.drop(self.history.index[n - 1])
             self.history.to_csv(self.history_file, index=False)
             logger.info(f"Deleted calculation {n} from {self.history_file}")
+            self.notify_observers("calculation_deleted", {"index": n})
         except Exception as e:
             logger.error(f"Failed to delete calculation {n} from {self.history_file}: {str(e)}")
             raise HistoryError(f"Failed to delete calculation: {str(e)}")
@@ -153,6 +159,7 @@ class CalculationHistory:
             self.history['steps'] = self.history['steps'].apply(lambda s: json.loads(s) if pd.notna(s) else [])
             self.history.to_csv(self.history_file, index=False)
             logger.info(f"Loaded history from {backup_file} into {self.history_file}: {len(self.history)} entries")
+            self.notify_observers("history_loaded", {"filename": filename, "entries": len(self.history)})
         except pd.errors.ParserError as e:
             logger.error(f"Failed to parse CSV in {backup_file}: {str(e)}")
             raise HistoryError(f"Failed to load history: Malformed CSV file")

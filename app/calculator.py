@@ -3,25 +3,22 @@ import re
 from app.calculation import CalculationFactory
 from app.logger import get_logger
 from app.memento import CalculationMemento, CalculationHistory
-from app.history import display_history, save_history, new_history, delete_calculation, load_history
+from app.history import display_history, save_history, new_history, delete_calculation, load_history, HistoryDisplayObserver
 from app.exceptions import OperationError, CalculatorError, HistoryError
 from app.config import HISTORY_FILE_PATH
 from colorama import init, Fore, Style
 
-init()  # Initialize colorama
-
+init()
 log = get_logger("calculator")
 precedence = {"1": ['+', '-', '--'], "2": ['*', '/', '%', '/%', '//'], "3": ['^', '?']}
 
 def get_precedence_group(operator):
-    """Return the precedence group for a given operator."""
     for group, ops in precedence.items():
         if operator in ops:
             return group
     return None
 
 def parse_ans_reference(token, history):
-    """Parse 'ans' or 'ans(n)' and return the corresponding previous result."""
     try:
         if token == 'ans':
             return history.get_previous_result(len(history.get_history()))
@@ -38,13 +35,11 @@ def parse_ans_reference(token, history):
         raise CalculatorError(f"Invalid ans reference: {str(e)}")
 
 def format_ans_token(token, value=None):
-    """Format ans(n) token with its resolved value in parentheses."""
     if value is not None and token.startswith('ans'):
         return f"{token} ({value})"
     return token
 
 def calculate_expression(input_str, history):
-    """Process a calculation input and perform operations using CalculationFactory."""
     try:
         log.debug(f"User entered input: {input_str}")
         u_input_lst = input_str.strip().split()
@@ -69,8 +64,8 @@ def calculate_expression(input_str, history):
         
         precedence_group = None
         steps = []
-        original_input = [first_token]  # Store original tokens, not formatted
-        formatted_input = [formatted_first_token] + values  # Formatted for memento
+        original_input = [first_token]
+        formatted_input = [formatted_first_token] + values
         while values:
             if len(values) < 2:
                 log.error("Incomplete expression: Expected operator and number")
@@ -107,15 +102,13 @@ def calculate_expression(input_str, history):
                 raise CalculatorError(f"Expected a number or ans(n) after operator")
             
             try:
-                calculation = CalculationFactory.create_calculation(operator, result, num)
-                new_result = calculation.execute()
-                log.debug(f"Current result: {new_result}")
+                result = CalculationFactory.create_calculation(operator, result, num)
+                log.debug(f"Current result: {result}")
                 step_input = f"{formatted_input[0]} {operator} {formatted_next_token}"
-                formatted_input = [str(new_result)] + values
-                original_input = [str(new_result)] + values
-                memento = CalculationMemento(step_input, operator, result, num, new_result)
+                formatted_input = [str(result)] + values
+                original_input = [str(result)] + values
+                memento = CalculationMemento(step_input, operator, result, num, result)
                 steps.append(memento)
-                result = new_result
             except ValueError as ve:
                 log.error(f"Calculation error: {str(ve)}")
                 raise OperationError(f"Calculation error: {str(ve)}")
@@ -129,9 +122,10 @@ def calculate_expression(input_str, history):
         raise
 
 def calculator(history=None):
-    """Main calculator function."""
+    """Main calculator function with colored output."""
     if history is None:
         history = CalculationHistory(HISTORY_FILE_PATH)
+    history.register_observer(HistoryDisplayObserver())
     print(f"{Fore.BLUE}Welcome to Dom Urso's Calculator!{Style.RESET_ALL}")
     print(f"Enter calculations like '1 + 2 + 3' or 'ans(1) + 2', 'history' to view past calculations, or 'exit' to quit.")
     while True:
@@ -168,7 +162,7 @@ def calculator(history=None):
                       {Fore.GREEN}save{Style.RESET_ALL} - save current history to a timestamped CSV file
                       {Fore.GREEN}new{Style.RESET_ALL} - start a new history (clears current history)
                       {Fore.GREEN}delete <index>{Style.RESET_ALL} - delete the calculation at the given index (e.g., 'delete 1')
-                      {Fore.GREEN}load <filename>{Style.RESET_ALL} - load history from a backup CSV file (e.g., 'load history_20250630_182058.csv')
+                      {Fore.GREEN}load <filename>{Style.RESET_ALL} - load history from a backup CSV file (e.g., 'load history_20250630_193258.csv')
                       {Fore.GREEN}exit{Style.RESET_ALL} - exit the program
                     {Fore.YELLOW}Examples:{Style.RESET_ALL}
                       {Fore.GREEN}1 + 2 - 3{Style.RESET_ALL}
@@ -176,7 +170,7 @@ def calculator(history=None):
                       {Fore.GREEN}ans + 5{Style.RESET_ALL}
                       {Fore.GREEN}25 ? 2{Style.RESET_ALL} (square root)
                       {Fore.GREEN}delete 1{Style.RESET_ALL}
-                      {Fore.GREEN}load history_20250630_182058.csv{Style.RESET_ALL}
+                      {Fore.GREEN}load history_20250630_193258.csv{Style.RESET_ALL}
                 """)
                 continue
             
@@ -215,8 +209,9 @@ def calculator(history=None):
                     load_history(history, filename)
                 except HistoryError as e:
                     print(f"{Fore.RED}Error: {str(e)}{Style.RESET_ALL}")
-                    print(f"{Fore.RED}Please use format: load <filename> (e.g., 'load history_20250630_182058.csv'){Style.RESET_ALL}")
-                continue        
+                    print(f"{Fore.RED}Please use format: load <filename> (e.g., 'load history_20250630_193258.csv'){Style.RESET_ALL}")
+                continue
+            
             try:
                 first_token = u_input.split()[0]
                 if not (first_token.startswith('ans') or float(first_token)):
@@ -225,15 +220,15 @@ def calculator(history=None):
                 raise CalculatorError(f"Invalid command: Input must start with a number or ans(n)")
             
             result = calculate_expression(u_input, history)
-            print(f"Result: {result}")
+            print(f"{Fore.GREEN}Result: {result}{Style.RESET_ALL}")
         
         except (OperationError, CalculatorError, HistoryError) as e:
             log.warning(f"Error: {str(e)}")
-            print(f"Error: {str(e)}")
-            print("Please try again or type 'help' for assistance")
+            print(f"{Fore.RED}Error: {str(e)}{Style.RESET_ALL}")
+            print(f"{Fore.RED}Please try again or type 'help' for assistance{Style.RESET_ALL}")
             continue
         except Exception as e:
             log.warning(f"Unexpected error: {str(e)}")
-            print(f"Unexpected error: {str(e)}")
-            print("Please try again or type 'help' for assistance")
+            print(f"{Fore.RED}Unexpected error: {str(e)}{Style.RESET_ALL}")
+            print(f"{Fore.RED}Please try again or type 'help' for assistance{Style.RESET_ALL}")
             continue
