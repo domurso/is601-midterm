@@ -102,12 +102,13 @@ def calculate_expression(input_str, history):
                 raise CalculatorError(f"Expected a number or ans(n) after operator")
             
             try:
-                result = CalculationFactory.create_calculation(operator, result, num)
+                calc = CalculationFactory.create_calculation(operator, result, num)
+                result = calc.execute()
                 log.debug(f"Current result: {result}")
                 step_input = f"{formatted_input[0]} {operator} {formatted_next_token}"
                 formatted_input = [str(result)] + values
                 original_input = [str(result)] + values
-                memento = CalculationMemento(step_input, operator, result, num, result)
+                memento = CalculationMemento(step_input, operator, calc.a, calc.b, result)
                 steps.append(memento)
             except ValueError as ve:
                 log.error(f"Calculation error: {str(ve)}")
@@ -122,7 +123,6 @@ def calculate_expression(input_str, history):
         raise
 
 def calculator(history=None):
-    """Main calculator function with colored output."""
     if history is None:
         history = CalculationHistory(HISTORY_FILE_PATH)
     history.register_observer(HistoryDisplayObserver())
@@ -162,7 +162,7 @@ def calculator(history=None):
                       {Fore.GREEN}save{Style.RESET_ALL} - save current history to a timestamped CSV file
                       {Fore.GREEN}new{Style.RESET_ALL} - start a new history (clears current history)
                       {Fore.GREEN}delete <index>{Style.RESET_ALL} - delete the calculation at the given index (e.g., 'delete 1')
-                      {Fore.GREEN}load <filename>{Style.RESET_ALL} - load history from a backup CSV file (e.g., 'load history_20250630_193258.csv')
+                      {Fore.GREEN}load <filename>{Style.RESET_ALL} - load history from a backup CSV file (e.g., 'load history_20250630_220158.csv')
                       {Fore.GREEN}exit{Style.RESET_ALL} - exit the program
                     {Fore.YELLOW}Examples:{Style.RESET_ALL}
                       {Fore.GREEN}1 + 2 - 3{Style.RESET_ALL}
@@ -170,7 +170,7 @@ def calculator(history=None):
                       {Fore.GREEN}ans + 5{Style.RESET_ALL}
                       {Fore.GREEN}25 ? 2{Style.RESET_ALL} (square root)
                       {Fore.GREEN}delete 1{Style.RESET_ALL}
-                      {Fore.GREEN}load history_20250630_193258.csv{Style.RESET_ALL}
+                      {Fore.GREEN}load history_20250630_220158.csv{Style.RESET_ALL}
                 """)
                 continue
             
@@ -209,7 +209,7 @@ def calculator(history=None):
                     load_history(history, filename)
                 except HistoryError as e:
                     print(f"{Fore.RED}Error: {str(e)}{Style.RESET_ALL}")
-                    print(f"{Fore.RED}Please use format: load <filename> (e.g., 'load history_20250630_193258.csv'){Style.RESET_ALL}")
+                    print(f"{Fore.RED}Please use format: load <filename> (e.g., 'load history_20250630_220158.csv'){Style.RESET_ALL}")
                 continue
             
             try:

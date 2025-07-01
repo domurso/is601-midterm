@@ -3,6 +3,7 @@ from app.logger import get_logger
 from app.config import HISTORY_BACKUP_DIR
 from app.observer import Observer
 from colorama import Fore, Style
+import json
 
 logger = get_logger("history")
 
@@ -10,7 +11,8 @@ class HistoryDisplayObserver(Observer):
     def update(self, event, data):
         if event == "calculation_added":
             print(f"{Fore.GREEN}New calculation added: {data['input']} = {data['result']}{Style.RESET_ALL}")
-            for idx, step in enumerate(data['steps'], 1):
+            steps = json.loads(data['steps']) if isinstance(data['steps'], str) else data['steps']
+            for idx, step in enumerate(steps, 1):
                 print(f"   Step {Fore.CYAN}{idx}{Style.RESET_ALL}: {step['input']} = {step['result']}")
         elif event == "history_saved":
             print(f"{Fore.GREEN}History saved to {Fore.CYAN}{data['backup_file']}{Style.RESET_ALL}")
@@ -31,7 +33,8 @@ def display_history(history):
         print(f"{Fore.YELLOW}Calculation History:{Style.RESET_ALL}")
         for idx, row in history.get_history().iterrows():
             print(f"{Fore.CYAN}{idx + 1}.{Style.RESET_ALL} {Fore.YELLOW}{row['timestamp']}{Style.RESET_ALL}: {Fore.GREEN}{row['input']}{Style.RESET_ALL} = {Fore.YELLOW}{row['result']}{Style.RESET_ALL}")
-            for step_idx, step in enumerate(row['steps'], 1):
+            steps = json.loads(row['steps']) if isinstance(row['steps'], str) else row['steps']
+            for step_idx, step in enumerate(steps, 1):
                 print(f"   Step {Fore.CYAN}{step_idx}{Style.RESET_ALL}: {step['input']} = {Fore.YELLOW}{step['result']}{Style.RESET_ALL}")
     except Exception as e:
         logger.error(f"Failed to display history: {str(e)}")
